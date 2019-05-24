@@ -85,20 +85,5 @@ int main(int argc, char *argv[])
         thread_id++;
 
         pthread_create(&thread, NULL, handle_request, (void*) csock);
-
-        /*
-        switch (fork()) {
-            case -1:
-                perror("fork");
-                close(csock);
-                break;
-            case 0:
-                close(lsock);
-                handle_request(csock);
-                _exit(EXIT_SUCCESS);
-            default:
-                close(csock);
-                break;
-        }*/
     }
 }
