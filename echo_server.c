@@ -15,7 +15,8 @@ static void handle_request(int sock)
     ssize_t n;
 
     while((n = read(sock, buf, BUF_SIZE)) > 0) {
-        printf("[%d] read: %s", getpid(), buf);
+        buf[n] = '\0';
+        printf("[%d] Read %ld bytes: %s", getpid(), n, buf);
         write(sock, buf, n);
     }
 }
@@ -24,6 +25,12 @@ int main(int argc, char *argv[])
 {
     int lsock, csock;
     struct sockaddr_in addr;
+    struct sockaddr_in peeraddr;
+
+    if (argc < 3) {
+        fprintf(stderr, "Uso: %s ip puerto\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     lsock = socket(AF_INET, SOCK_STREAM, 0);
     if (lsock == -1) {
@@ -33,8 +40,9 @@ int main(int argc, char *argv[])
 
     memset(&addr, 0, sizeof(struct sockaddr_in));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(8080);
-    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    addr.sin_port = htons(atoi(argv[2]));
+    inet_aton(argv[1], &(addr.sin_addr.s_addr));
+    //addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     int optval = 1;
     if(setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &optval, sizeof(optval)) == -1) {
@@ -52,13 +60,19 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    printf("[%d] Listening for connections...\n", getpid());
+
     for (;;) {
-        printf("[%d] Listening for connections...\n", getpid());
-        csock = accept(lsock, NULL, NULL);
+        memset(&peeraddr, 0, sizeof(struct sockaddr_in));
+        socklen_t socklen = sizeof(struct sockaddr_in);
+
+        csock = accept(lsock, &peeraddr, &socklen);
         if (csock == -1) {
             perror("accept");
             exit(EXIT_FAILURE);
         }
+
+        printf("[%d] Connection accepted from %s:%d ...\n", getpid(), inet_ntoa(peeraddr.sin_addr), peeraddr.sin_port);
 
         switch (fork()) {
             case -1:
