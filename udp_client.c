@@ -52,9 +52,13 @@ int main(int argc, char* argv[])
 	printf("Hello message sent.\n"); 
 		
 	n = recvfrom(sockfd, (char *)buffer, MAXLINE, 
-				0, (struct sockaddr *) &servaddr, 
+				MSG_WAITALL, (struct sockaddr *) &servaddr, 
 				&len); 
+    if (n < 0) {
+        perror("recvfrom");
+    }
     //n = recv(sockfd, (char*)buffer, MAXLINE, MSG_WAITALL);
+    //getsockname(sockfd, (struct sockaddr*) &servaddr, &len);
 	buffer[n] = '\0'; 
 	printf("Server : %s\n", buffer); 
     printf("Port: %d\n", ntohs(servaddr.sin_port));
@@ -65,6 +69,9 @@ int main(int argc, char* argv[])
         if (n < 0) {
             perror("sendto");
             exit(EXIT_FAILURE);
+        }
+        else {
+            printf("Send %d to server at port %d...\n", n, ntohs(servaddr.sin_port));
         }
     } while (buffer[0] != '\n');
 
