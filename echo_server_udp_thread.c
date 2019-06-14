@@ -10,27 +10,27 @@
 
 #define BUF_SIZE 4096
 
-int thread_id = 0;
+int thread_cnt = 0;
 struct in_addr ip_srv;
 
 struct conn_info {
+    int thread_id;
     int sock;
     struct sockaddr_in addr;
 };
 
 static void* handle_request_udp(void* s)
 {
-    char buf[BUF_SIZE];
     ssize_t n;
+    char buf[BUF_SIZE];
     socklen_t len = sizeof(struct sockaddr_in);
 
     struct conn_info *client = (struct conn_info *) s;
-    int id = thread_id;
 
     struct sockaddr_in naddr;
     memset(&naddr, 0, sizeof(struct sockaddr_in));
     naddr.sin_family = AF_INET;
-    naddr.sin_port = htons(8081);
+    naddr.sin_port = htons(0);
     naddr.sin_addr.s_addr = ip_srv.s_addr;
 
     client->sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -46,16 +46,25 @@ static void* handle_request_udp(void* s)
         exit(EXIT_FAILURE);
     }
 
-    printf("[Thread %d] I'm listening at port %d, and handling client %s:%d ...\n", thread_id, ntohs(naddr.sin_port), inet_ntoa((client->addr).sin_addr), ntohs((client->addr).sin_port));
+    getsockname(client->sock, (struct sockaddr*) &naddr, &len);
+
+    printf("[Thread %d] I'm listening at port %d, and handling client %s:%d ...\n", client->thread_id, ntohs(naddr.sin_port), inet_ntoa((client->addr).sin_addr), ntohs((client->addr).sin_port));
 
     strcpy(buf, "Hola!");
     sendto(client->sock, buf, strlen(buf), 0, (struct sockaddr*) &(client->addr), sizeof(struct sockaddr_in));
     
     while((n = recvfrom(client->sock, buf, BUF_SIZE, 0, (struct sockaddr*) &naddr, &len)) > 0) {
         buf[n]='\0';
-        printf("[%d] Read %ld bytes: %s", id, n, buf);
+        printf("[Thread %d] Read %ld bytes: %s", client->thread_id, n, buf);
         sendto(client->sock, buf, strlen(buf), 0, (struct sockaddr*) &(client->addr), sizeof(struct sockaddr_in));
+        if (buf[0] == '\n') {
+            break;
+        }
     }
+
+    printf("[Thread %d] Bye!\n", client->thread_id);
+    
+    pthread_exit(0);
 }
 
 
@@ -104,7 +113,7 @@ int main(int argc, char *argv[])
         buf[n] = '\0';
         printf("[%d] Received: %s (%d bytes)...\n", getpid(), buf, n);
 
-        thread_id++;
+        client->thread_id = thread_cnt++;
 
         pthread_create(&thread, NULL, handle_request_udp, (void*) client);
     }

@@ -1,4 +1,4 @@
-// Client side implementation of UDP client-server model 
+// UDP client
 #include <stdio.h> 
 #include <stdlib.h> 
 #include <unistd.h> 
@@ -15,16 +15,14 @@ int main(int argc, char* argv[])
 { 
 	int sockfd; 
 	char buffer[MAXLINE]; 
-	char *hello = "Hello from client"; 
-    char *s = "s";
 	struct sockaddr_in	 servaddr; 
 
     if (argc < 3) {
-        fprintf(stderr, "Uso: %s ip puerto\n", argv[0]);
+        fprintf(stderr, "Use: %s ip port\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-	// Creating socket file descriptor 
+	// Create socket 
 	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
 		perror("socket creation failed"); 
 		exit(EXIT_FAILURE); 
@@ -32,37 +30,15 @@ int main(int argc, char* argv[])
 
 	memset(&servaddr, 0, sizeof(servaddr)); 
 	
-	// Filling server information 
+	// Server address
 	servaddr.sin_family = AF_INET; 
     servaddr.sin_port = htons(atoi(argv[2]));
     inet_aton(argv[1], &(servaddr.sin_addr));
 	
 	int n, len; 
-    printf("Connecting to %s:%d ...\n", inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
+    printf("Send data to server %s:%d ...\n", inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
 	
-	n = sendto(sockfd, (const char *)hello, strlen(hello), 
-		0, (const struct sockaddr *) &servaddr, 
-	    sizeof(servaddr));
-    if (n < 0) {
-        perror("sendto");
-        exit(EXIT_FAILURE);
-    }
-    
-    //send(sockfd, (const char*)hello, strlen(hello), MSG_CONFIRM);
-	printf("Hello message sent.\n"); 
-		
-	n = recvfrom(sockfd, (char *)buffer, MAXLINE, 
-				MSG_WAITALL, (struct sockaddr *) &servaddr, 
-				&len); 
-    if (n < 0) {
-        perror("recvfrom");
-    }
-    //n = recv(sockfd, (char*)buffer, MAXLINE, MSG_WAITALL);
-    //getsockname(sockfd, (struct sockaddr*) &servaddr, &len);
-	buffer[n] = '\0'; 
-	printf("Server : %s\n", buffer); 
-    printf("Port: %d\n", ntohs(servaddr.sin_port));
-
+    len = sizeof(servaddr);
     do {
         fgets(buffer, MAXLINE, stdin);
         n = sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr*) &servaddr, sizeof(servaddr));
@@ -70,10 +46,16 @@ int main(int argc, char* argv[])
             perror("sendto");
             exit(EXIT_FAILURE);
         }
-        else {
-            printf("Send %d to server at port %d...\n", n, ntohs(servaddr.sin_port));
+
+        printf("Sended %d bytes to %s:%d ...\n", n, inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
+
+	    n = recvfrom(sockfd, (char *)buffer, MAXLINE, 0, (struct sockaddr *) &servaddr, &len); 
+        if (n < 0) {
+            perror("recvfrom");
         }
     } while (buffer[0] != '\n');
+
+    printf("Bye!\n");
 
 	close(sockfd); 
 	return 0; 
