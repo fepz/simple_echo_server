@@ -1,1 +1,1 @@
-Two simple concurrent echo servers.
+Examples of concurrent echo servers.
