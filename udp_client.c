@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
         printf("Sended %d bytes to %s:%d ...\n", n, inet_ntoa(servaddr.sin_addr), ntohs(servaddr.sin_port));
 
-	    n = recvfrom(sockfd, (char *)buffer, MAXLINE, 0, (struct sockaddr *) &servaddr, &len); 
+	    n = recvfrom(sockfd, (char *)buffer, MAXLINE, 0, (struct sockaddr *) &servaddr, (socklen_t*) &len); 
         if (n < 0) {
             perror("recvfrom");
         }

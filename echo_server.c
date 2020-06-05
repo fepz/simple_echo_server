@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
         memset(&peeraddr, 0, sizeof(struct sockaddr_in));
         socklen_t socklen = sizeof(struct sockaddr_in);
 
-        csock = accept(lsock, &peeraddr, &socklen);
+        csock = accept(lsock, (struct sockaddr*) &peeraddr, &socklen);
         if (csock == -1) {
             perror("accept");
             exit(EXIT_FAILURE);

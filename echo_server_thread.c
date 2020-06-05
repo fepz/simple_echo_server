@@ -25,6 +25,8 @@ static void* handle_request(void* s)
         printf("[%d] Read %ld bytes: %s", id, n, buf);
         write(sock, buf, n);
     }
+
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
