@@ -17,7 +17,7 @@ static void* handle_request_tcp(void* s)
     char buf[BUF_SIZE];
     ssize_t n;
 
-    int sock = (int) s;
+    int sock = *((int*) s);
     int id = thread_id;
 
     while((n = read(sock, buf, BUF_SIZE)) > 0) {
@@ -25,6 +25,8 @@ static void* handle_request_tcp(void* s)
         printf("[%d] Read %ld bytes: %s", id, n, buf);
         write(sock, buf, n);
     }
+
+    pthread_exit(NULL);
 }
 
 static void* handle_request_udp(void* s)
@@ -32,7 +34,7 @@ static void* handle_request_udp(void* s)
     char buf[BUF_SIZE];
     ssize_t n;
 
-    int sock = (int) s;
+    int sock = *((int*) s);
     int id = thread_id;
 
     while((n = recv(sock, buf, BUF_SIZE, 0)) > 0) {
@@ -40,6 +42,8 @@ static void* handle_request_udp(void* s)
         printf("[%d] Read %ld bytes: %s", id, n, buf);
         send(sock, buf, n, 0);
     }
+
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
@@ -94,13 +98,13 @@ int main(int argc, char *argv[])
 
     printf("[%d] Listening for connections...\n", getpid());
 
-    pthread_create(&thread, NULL, handle_request_udp, (void*) lsock_udp);
+    pthread_create(&thread, NULL, handle_request_udp, (void*) &lsock_udp);
 
     for (;;) {
         memset(&peeraddr, 0, sizeof(struct sockaddr_in));
         socklen_t socklen = sizeof(struct sockaddr_in);
 
-        csock = accept(lsock, &peeraddr, &socklen);
+        csock = accept(lsock, (struct sockaddr*) &peeraddr, &socklen);
         if (csock == -1) {
             perror("accept");
             exit(EXIT_FAILURE);
@@ -110,6 +114,6 @@ int main(int argc, char *argv[])
 
         thread_id++;
 
-        pthread_create(&thread, NULL, handle_request_tcp, (void*) csock);
+        pthread_create(&thread, NULL, handle_request_tcp, (void*) &csock);
     }
 }

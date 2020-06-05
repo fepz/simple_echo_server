@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
     addr.sin_family = AF_INET;
     addr.sin_port = htons(atoi(argv[2]));
     inet_aton(argv[1], &(addr.sin_addr));
-    //addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     int optval = 1;
     if(setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &optval, sizeof(optval)) == -1) {

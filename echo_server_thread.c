@@ -17,7 +17,7 @@ static void* handle_request(void* s)
     char buf[BUF_SIZE];
     ssize_t n;
 
-    int sock = (int) s;
+    int sock = *((int*)s);
     int id = thread_id;
 
     while((n = read(sock, buf, BUF_SIZE)) > 0) {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     struct sockaddr_in addr;
     struct sockaddr_in peeraddr;
 
-    if (argc < 3) {
+    if (argc != 3) {
         fprintf(stderr, "Uso: %s ip puerto\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
     addr.sin_family = AF_INET;
     addr.sin_port = htons(atoi(argv[2]));
     inet_aton(argv[1], &(addr.sin_addr));
-    //addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 
     int optval = 1;
     if(setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &optval, sizeof(optval)) == -1) {
@@ -74,7 +73,7 @@ int main(int argc, char *argv[])
         memset(&peeraddr, 0, sizeof(struct sockaddr_in));
         socklen_t socklen = sizeof(struct sockaddr_in);
 
-        csock = accept(lsock, &peeraddr, &socklen);
+        csock = accept(lsock, (struct sockaddr*) &peeraddr, &socklen);
         if (csock == -1) {
             perror("accept");
             exit(EXIT_FAILURE);
@@ -84,6 +83,6 @@ int main(int argc, char *argv[])
 
         thread_id++;
 
-        pthread_create(&thread, NULL, handle_request, (void*) csock);
+        pthread_create(&thread, NULL, handle_request, (void*) &csock);
     }
 }
